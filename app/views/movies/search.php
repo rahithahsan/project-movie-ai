@@ -1,14 +1,24 @@
 <?php require APP_ROOT.'/views/layout/header.php'; ?>
 
-<!-- ── search box (always shown) ── -->
-<form class="input-group mb-4" method="get">
-  <input type="hidden" name="url" value="movies/search">
-  <input type="text" name="q"  class="form-control" placeholder="Search movie title…"
-         value="<?= htmlspecialchars($query ?? '') ?>">
-  <button class="btn btn-primary">Search</button>
-</form>
+<!-- ╔════════════ SEARCH BOX  ════════════╗ -->
+<div class="position-relative mb-4">
+  <form class="input-group" method="get">
+    <input type="hidden" name="url" value="movies/search">
+    <!-- id="searchBox" needed by JS -->
+    <input id="searchBox" type="text" name="q" class="form-control"
+           placeholder="Search movie title…" autocomplete="off"
+           value="<?= htmlspecialchars($query ?? '') ?>">
+    <button class="btn btn-primary">Search</button>
+  </form>
 
-<?php /* ============ LIST MODE ============ */ ?>
+  <!-- suggestion drawer (filled by JS) -->
+  <div id="suggestList"
+       class="list-group position-absolute w-100 shadow-sm"
+       style="z-index:1050; max-height:260px; overflow-y:auto"></div>
+</div>
+<!-- ╚═════════════════════════════════════╝ -->
+
+<?php /* LIST MODE ───────────────────────────────────────────── */ ?>
 <?php if (!empty($list)): ?>
   <div class="row row-cols-2 row-cols-md-4 g-3 mb-5">
     <?php foreach ($list as $hit): ?>
@@ -28,7 +38,7 @@
     <?php endforeach; ?>
   </div>
 
-<?php /* ============ DETAIL MODE ============ */ ?>
+<?php /* DETAIL MODE ─────────────────────────────────────────── */ ?>
 <?php elseif (!empty($movie)): ?>
   <div class="card mb-4 shadow-sm">
     <div class="row g-0">
@@ -63,7 +73,7 @@
 
           <!-- AI review -->
           <a href="?url=movies/search&id=<?= $movie['imdbID'] ?>&review=1"
-             class="btn btn-sm btn-outline-secondary ms-2">Get AI review</a>
+             class="btn btn-sm btn-outline-secondary ms-2">Get AI review</a>
         </div>
       </div>
     </div>
@@ -71,11 +81,11 @@
 
   <?php if ($review): ?>
     <div class="alert alert-secondary">
-      <strong>AI Review:</strong><br><?= nl2br($review) ?>
+      <strong>AI Review:</strong><br><?= nl2br($review) ?>
     </div>
   <?php endif; ?>
 
-<?php /* ============ NO RESULTS ============ */ ?>
+<?php /* NO‑RESULT MODE ─────────────────────────────────────── */ ?>
 <?php elseif (!empty($query)): ?>
   <div class="alert alert-warning">
     No movies found for <strong><?= htmlspecialchars($query) ?></strong>

@@ -52,6 +52,36 @@ class Movies extends Controller
         /* pass everything to the view */
         $this->view('movies/search', compact('query', 'list', 'movie', 'avgRating', 'review'));
     }
+    /* ============== AJAX suggest ================= */
+    public function suggest(): void
+    {
+        if (empty($_GET['term'])) abort(400,'missing term');
+
+        $apiKey = $_ENV['OMDB_API_KEY'];
+        $term   = urlencode($_GET['term']);
+
+        $resp = json_decode(
+            file_get_contents("https://www.omdbapi.com/?apikey=$apiKey&s=$term&type=movie"),
+            true
+        );
+
+        $out = [];
+        if ($resp['Response'] === 'True') {
+            foreach (array_slice($resp['Search'], 0, 5) as $hit) {
+                $out[] = [
+                    'id'    => $hit['imdbID'],
+                    'title' => $hit['Title'],
+                    'year'  => $hit['Year'],
+                    'poster'=> $hit['Poster'],
+                ];
+            }
+        }
+
+        header('Content-Type: application/json');
+        echo json_encode($out);
+        exit;
+    }
+
 
     /* === helper: Gemini call (unchanged) === */
     private function aiReview(string $title, string $plot): string
