@@ -1,24 +1,41 @@
 <?php require APP_ROOT.'/views/layout/header.php'; ?>
 
-<!-- ╔════════════ SEARCH BOX  ════════════╗ -->
+<!-- ╔════════════ SEARCH BOX ════════════╗ -->
 <div class="position-relative mb-4">
   <form class="input-group" method="get">
     <input type="hidden" name="url" value="movies/search">
-    <!-- id="searchBox" needed by JS -->
     <input id="searchBox" type="text" name="q" class="form-control"
            placeholder="Search movie title…" autocomplete="off"
            value="<?= htmlspecialchars($query ?? '') ?>">
     <button class="btn btn-primary">Search</button>
   </form>
 
-  <!-- suggestion drawer (filled by JS) -->
+  <!-- live suggestions -->
   <div id="suggestList"
        class="list-group position-absolute w-100 shadow-sm"
-       style="z-index:1050; max-height:260px; overflow-y:auto"></div>
+       style="z-index:1050;max-height:260px;overflow-y:auto"></div>
 </div>
-<!-- ╚═════════════════════════════════════╝ -->
+<!-- ╚════════════════════════════════════╝ -->
 
-<?php /* LIST MODE ───────────────────────────────────────────── */ ?>
+
+<?php /* LANDING HERO (only when nothing searched yet) */ ?>
+<?php if (empty($query) && empty($list) && empty($movie)): ?>
+  <div class="hero p-5 mb-5 text-center">
+    <h1 class="display-6 fw-bold mb-3">Find • Rate • Review</h1>
+    <p class="lead mb-4">
+      Search any film in the <strong>OMDb</strong> catalogue, give it a rating,
+      then let <strong>Gemini 1.0 Flash</strong> write a spoiler‑free review – instantly.
+    </p>
+    <div class="row row-cols-1 row-cols-md-3 g-3">
+      <div class="col"><span class="badge bg-light text-dark p-3 w-100">★ Community averages</span></div>
+      <div class="col"><span class="badge bg-light text-dark p-3 w-100">⚡ AI 80‑word summaries</span></div>
+      <div class="col"><span class="badge bg-light text-dark p-3 w-100">⌨︎ Type‑ahead search</span></div>
+    </div>
+  </div>
+<?php endif; ?>
+
+
+<?php /* ─── LIST MODE ──────────────────────────────────── */ ?>
 <?php if (!empty($list)): ?>
   <div class="row row-cols-2 row-cols-md-4 g-3 mb-5">
     <?php foreach ($list as $hit): ?>
@@ -38,7 +55,7 @@
     <?php endforeach; ?>
   </div>
 
-<?php /* DETAIL MODE ─────────────────────────────────────────── */ ?>
+<?php /* ─── DETAIL MODE ───────────────────────────────── */ ?>
 <?php elseif (!empty($movie)): ?>
   <div class="card mb-4 shadow-sm">
     <div class="row g-0">
@@ -85,7 +102,7 @@
     </div>
   <?php endif; ?>
 
-<?php /* NO‑RESULT MODE ─────────────────────────────────────── */ ?>
+<?php /* ─── NO‑RESULT MODE ─────────────────────────────── */ ?>
 <?php elseif (!empty($query)): ?>
   <div class="alert alert-warning">
     No movies found for <strong><?= htmlspecialchars($query) ?></strong>
