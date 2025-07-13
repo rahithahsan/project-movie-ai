@@ -6,7 +6,7 @@ function db(): PDO
     if ($pdo) return $pdo;
 
     $dsn = sprintf(
-        'mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4',
+        'mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4;ssl-mode=DISABLED',
         $_ENV['DB_HOST'],
         $_ENV['DB_PORT'],
         $_ENV['DB_NAME']
