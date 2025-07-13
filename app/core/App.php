@@ -1,17 +1,36 @@
 <?php
-/* app/core/App.php */
+declare(strict_types=1);
+
+/* self‑define once — works from CLI & web */
+if (!defined('APP_ROOT')) {
+    define('APP_ROOT', dirname(__DIR__));
+}
+
+/* ultra‑light PSR‑0 autoloader */
+spl_autoload_register(function ($cls) {
+    foreach ([
+        APP_ROOT . "/controllers/$cls.php",
+        APP_ROOT . "/models/$cls.php",
+        APP_ROOT . "/core/$cls.php",
+    ] as $f) if (is_file($f)) { require $f; return; }
+});
+
 class App
 {
     public function __construct()
     {
-        $url = trim($_GET['url'] ?? 'movies/search', '/');
-        [$ctrlName, $method, $param] = array_pad(explode('/', $url, 3), 3, null);
+        $parts = explode('/', trim($_GET['url'] ?? 'movies/search', '/'));
+        [$c,$m] = [$parts[0] ?? 'movies', $parts[1] ?? 'search'];
 
-        $ctrlClass = ucfirst($ctrlName);
-        require_once APP_ROOT . "/controllers/{$ctrlClass}.php";
-        $controller = new $ctrlClass;
+        $ctrl = ucfirst($c);
+        if (!class_exists($ctrl)) abort(404,'ctrl');
+        if (!method_exists($ctrl,$m)) abort(404,'action');
 
-        $method = $method ?: 'index';
-        call_user_func_array([$controller, $method], $param ? [$param] : []);
+        call_user_func_array([new $ctrl, $m], array_slice($parts,2));
     }
+}
+
+function abort(int $code,string $msg): never
+{
+    http_response_code($code); exit("$code • $msg");
 }
