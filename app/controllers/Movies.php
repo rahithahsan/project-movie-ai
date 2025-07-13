@@ -1,90 +1,84 @@
 <?php
 class Movies extends Controller
 {
-    /** --------------------------------------------------------------
-     *  GET  /movies/search   – search the OMDb API
-     *  POST /movies/search   – persist a 1‑5 rating
-     *  --------------------------------------------------------------*/
+    /** Handles both list and detail. Routes:
+     *  GET /movies/search?q=lion+king         → list
+     *  GET /movies/search?id=tt6105098        → details for a hit
+     *  POST /movies/search   (rate)           → insert rating then redirect to details
+     */
     public function search(): void
     {
-        $ratingM   = $this->model('Rating');
+        $ratingM = $this->model('Rating');
 
-        $query     = $_GET['q']      ?? '';
-        $movie     = null;           // OMDb payload
-        $avgRating = null;           // float|null
-        $review    = null;           // AI review text
-
-        /* ── 1. Handle an incoming rating ───────────────────────── */
-        if ($_SERVER['REQUEST_METHOD'] === 'POST'
-            && isset($_POST['rate'], $_POST['title'])) {
-
-            $ratingM->insert(null, $_POST['title'], (int) $_POST['rate']);
-            // PRG pattern → avoids resubmission on refresh
-            header('Location: /movies/search?q=' .
-                    urlencode($_POST['title']));
+        /* ── Handle rating submission ───────────────────────────── */
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['rate'], $_POST['title'], $_POST['id'])) {
+            $ratingM->insert(null, $_POST['title'], (int)$_POST['rate']);
+            header('Location: /movies/search?id=' . urlencode($_POST['id']));
             exit;
         }
 
-        /* ── 2. Fetch OMDb data when a query is present ─────────── */
-        if ($query !== '') {
-            $raw = file_get_contents(
-                'https://www.omdbapi.com/?apikey=' .
-                $_ENV['OMDB_API_KEY'] . '&t=' . urlencode($query)
-            );
+        /* ── Decide “list” or “detail” mode ─────────────────────── */
+        $id     = $_GET['id'] ?? null;   // imdbID if coming from list click
+        $query  = $_GET['q']  ?? '';     // free‑text search term
+        $list   = [];
+        $movie  = null;
+        $avgRating = $review = null;
 
-            $payload = json_decode($raw, true);
-            if ($payload['Response'] === 'True') {
-                $movie     = $payload;
+        $apiKey = $_ENV['OMDB_API_KEY'];
+
+        if ($id) {                                    // -------- detail -------
+            $resp  = json_decode(
+                file_get_contents("https://www.omdbapi.com/?apikey=$apiKey&i=$id&plot=full"),
+                true
+            );
+            if ($resp['Response'] === 'True') {
+                $movie     = $resp;
                 $avgRating = $ratingM->avgFor($movie['Title']);
+
+                /* optional AI review */
+                if (isset($_GET['review'])) {
+                    $review = $this->aiReview($movie['Title'], $movie['Plot']);
+                }
             }
         }
-
-        /* ── 3. Optional AI‑generated review (Gemini) ───────────── */
-        if ($movie && isset($_GET['review'])) {
-            $review = $this->aiReview($movie['Title'], $movie['Plot']);
+        elseif ($query !== '') {                      // -------- list ---------
+            $resp = json_decode(
+                file_get_contents("https://www.omdbapi.com/?apikey=$apiKey&s=" . urlencode($query) . "&type=movie"),
+                true
+            );
+            if ($resp['Response'] === 'True') $list = $resp['Search'];
         }
 
-        /* ── 4. Render view ─────────────────────────────────────── */
-        $this->view('movies/search',
-            compact('movie', 'query', 'avgRating', 'review'));
+        /* pass everything to the view */
+        $this->view('movies/search', compact('query', 'list', 'movie', 'avgRating', 'review'));
     }
 
-    /* ==============================================================
-       Private helper – call Gemini‑Pro and return an 80‑word review
-       ==============================================================*/
+    /* === helper: Gemini call (unchanged) === */
     private function aiReview(string $title, string $plot): string
     {
         $url  = 'https://generativelanguage.googleapis.com/v1beta/models/'
-              . 'gemini-2.0-flash:generateContent?key='
-              . $_ENV['GEMINI_API_KEY'];          // 👈 endpoint + key
+              . 'gemini-2.0-flash:generateContent?key=' . $_ENV['GEMINI_API_KEY'];
 
         $body = json_encode([
             'contents' => [[
                 'parts' => [[
-                    'text' => "Write an impartial 80‑word movie review for "
-                            . "\"$title\".\nPlot synopsis: $plot"
+                    'text' => "Write an impartial 80‑word movie review for \"$title\". Plot: $plot"
                 ]]
             ]]
         ]);
 
-        /* curl POST */
         $ch = curl_init($url);
         curl_setopt_array($ch, [
             CURLOPT_POST           => true,
             CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
             CURLOPT_POSTFIELDS     => $body,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT        => 12,
+            CURLOPT_TIMEOUT        => 15
         ]);
-
-        $raw  = curl_exec($ch);
-        $err  = curl_error($ch);
+        $raw = curl_exec($ch);
         curl_close($ch);
 
-        if ($err) return "Review unavailable. ($err)";
-
         $json = json_decode($raw, true);
-
         return $json['candidates'][0]['content']['parts'][0]['text']
                ?? 'Review unavailable.';
     }
