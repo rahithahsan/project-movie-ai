@@ -1,0 +1,8 @@
+echo ".env
+.replit
+replit.nix
+/vendor/
+*.log
+.idea/
+.vscode/
+.DS_Store" > .gitignore
