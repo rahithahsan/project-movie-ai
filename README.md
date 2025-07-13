@@ -54,6 +54,7 @@ Button calls `/movies/search?id=…&review=1` → controller hits Google Gemin
 *   Dedicated brand palette in `public/css/style.css`
 
 ## 2. Folder map
+```txt
 app/
   controllers/   Movies.php
   models/        Rating.php
@@ -66,7 +67,7 @@ public/
   js/            suggest.js
   index.php      (front‑controller)
 router.php       (pretty URL helper for Replit)
-
+```
 
 ## 3. RUBRIC CHECKLIST:
 MVC - Clean 3‑layer separation; single controller handles both list & detail; autoloader in core/App.php.
