@@ -1,0 +1,24 @@
+/* ─── Movie‑AI brand palette ───────────────────────────── */
+:root{
+  --ai-primary:#0d6efd;   /* Bootstrap blue   */
+  --ai-accent :#6610f2;   /* indigo gradient */
+  --ai-dark   :#0c0f14;   /* navbar / footer */
+  --ai-light  :#f8f9fa;   /* page background */
+}
+
+/* global tweaks */
+body            { background:var(--ai-light); }
+.navbar, footer { background:var(--ai-dark);  }
+
+.hero{
+  background:linear-gradient(135deg,var(--ai-primary) 0%,var(--ai-accent) 100%);
+  border-radius:.75rem; color:#fff;
+}
+.hero h1{ font-size:1.75rem; }
+
+/* suggestion dropdown hover */
+#suggestList button:hover{ background:#e9ecef; }
+
+/* make cards a touch softer */
+.card{ border:0; }
+.card img{ object-fit:cover; }
